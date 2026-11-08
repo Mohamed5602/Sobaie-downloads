@@ -1,0 +1,31 @@
+name: Publish the downloads
+# Makes the public releases from the files in files/ (SORA and SOCA are built in their own, private repositories).
+on:
+  push:
+    branches: [main]
+    paths: ['files/**', '.github/workflows/release.yml']
+  workflow_dispatch: {}
+permissions: { contents: write }
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env: { GH_TOKEN: '${{ github.token }}' }
+    steps:
+      - uses: actions/checkout@v4
+      - name: SORA 1.1
+        run: |
+          gh release delete sora-1.1 -y --cleanup-tag -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release create sora-1.1 files/SORA-1.1.exe files/SORA_User_Manual.pdf -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+            --title "SORA 1.1 – Sobaie Rainfall Analysis" \
+            --notes "SORA 1.1 (November 2026) for Windows 10 and 11 – portable, nothing to install. Download page: https://sora.mohamedabosebie.workers.dev"
+      - name: SOCA 1.0
+        run: |
+          gh release delete soca-1.0 -y --cleanup-tag -R "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release create soca-1.0 files/SOCA-1.0.exe files/SOCA_User_Manual.pdf -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+            --title "SOCA 1.0 – Sobaie Catchment Analysis" \
+            --notes "SOCA 1.0 (November 2026) for Windows 10 and 11 – portable, nothing to install. Download page: https://sora.mohamedabosebie.workers.dev"
+      - name: Check the links
+        run: |
+          for f in sora-1.1/SORA-1.1.exe soca-1.0/SOCA-1.0.exe sora-1.1/SORA_User_Manual.pdf soca-1.0/SOCA_User_Manual.pdf; do
+            curl -sSIL -o /dev/null -w "$f %{http_code} %{size_download}\n" "https://github.com/$GITHUB_REPOSITORY/releases/download/$f"
+          done
